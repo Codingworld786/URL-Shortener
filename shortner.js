@@ -1,60 +1,64 @@
-/**
- * Created by rishabhshukla on 09/03/17.
- */
-var firebase = require('firebase');
+const { initializeApp } = require('firebase/app');
+const { getDatabase, ref, set, get } = require('firebase/database');
 const r = require('convert-radix64');
-const hasha = require("hasha");
+const hasha = require('hasha');
+
 const hashMap = {};
 
-var config = {
-    apiKey: "AIzaSyBAAUCZ8xXzS4r7jxMhlvPB6OzKIC0MRE8",
-    authDomain: "urlshortner-b1883.firebaseapp.com",
-    databaseURL: "https://urlshortner-b1883.firebaseio.com",
-    storageBucket: "urlshortner-b1883.appspot.com",
+// Your Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBAAUCZ8xXzS4r7jxMhlvPB6OzKIC0MRE8",
+  authDomain: "urlshortner-b1883.firebaseapp.com",
+  databaseURL: "https://urlshortner-b1883.firebaseio.com",
+  storageBucket: "urlshortner-b1883.appspot.com",
 };
-firebase.initializeApp(config);
 
-module.exports = {
-    shorten: (url) => {
-        hash =  hasha(url, {encoding:"base64", algorithm:"md5"});
-        hash = hash.slice(0,4);
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-        hash = hash.replace('/','-');
-        hash = hash.replace('+','_');
-        // let hashInt = parseInt(hash,16)
-        // conv = atob(hashInt);
-        hashMap[hash] = url;
-        writeUserData(url,r.from64(hash),hash);
+const shorten = async (url) => {
+  let hash = hasha(url, { encoding: "base64", algorithm: "md5" });
+  hash = hash.slice(0, 4);
 
-        return hash;
+  hash = hash.replace(/\//g, '-').replace(/\+/g, '_'); // Replacing characters to make hash URL-safe
 
-    },
-    expand: (shortcode) => {
+  hashMap[hash] = url;
+  await writeUserData(url, r.from64(hash), hash);
 
-        return new Promise(function(resolve, reject){
+  return hash;
+};
 
-            if(shortcode === undefined){
-                reject(null);
-            }
-            var ref = firebase.database().ref('/'+r.from64(shortcode));
+const expand = async (shortcode) => {
+  if (shortcode === undefined) {
+    throw new Error('Shortcode is required');
+  }
 
-                ref.once('value').then(function(snapshot) {
-                val = snapshot.val();
-                if(val){       
-                    let url = val.url;
-                    resolve(url);
-                }else{
-                    resolve(hashMap[shortcode]);
-                }
-            });
-                
-        });
+  const refPath = `/${r.from64(shortcode)}`;
+  const urlRef = ref(db, refPath);
+
+  const snapshot = await get(urlRef);
+
+  if (snapshot.exists()) {
+    const data = snapshot.val();
+    return data.url;
+  } else {
+    if (hashMap[shortcode]) {
+      return hashMap[shortcode];
+    } else {
+      throw new Error('URL not found');
     }
+  }
 };
 
-writeUserData = (url,shortcode,code) => {
-    firebase.database().ref('/'+shortcode).set({
-        code:code,
-        url:url
-    });
-}
+const writeUserData = async (url, shortcode, code) => {
+  const refPath = `/${shortcode}`;
+  const urlRef = ref(db, refPath);
+
+  await set(urlRef, {
+    code: code,
+    url: url
+  });
+};
+
+module.exports = { shorten, expand };
