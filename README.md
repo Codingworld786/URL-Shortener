@@ -1,5 +1,15 @@
 # URL-Shortener
 
+The URL Shortener project is a web application that allows users to convert long URLs into shorter, more manageable links. It provides functionalities for generating shortened URLs, redirecting users from shortened links to the original URLs, and managing URL data using Firebase as the backend database. This project can be used for various purposes, including link management, analytics, and URL shortening services.
+
+Key Features:
+
+Shorten URLs: Users can submit a long URL to receive a shortened version.
+Data Storage: URL mappings are stored in Firebase Realtime Database.
+Frontend Interface: A simple web interface for users to enter URLs and view shortened links.
+
+
+
 <a href="https://github.com/Codingworld786/URL-Shortener/edit/master/LICENSE"><img src="https://img.shields.io/badge/License-MIT-red.svg" alt="license"/></a>
 
 
